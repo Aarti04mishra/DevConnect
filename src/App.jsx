@@ -1,3 +1,4 @@
+import { Route, Routes } from 'react-router-dom'
 import Navbar from "./Components/Navbar"
 import ActiveProjects from "./pages/ActiveProjects"
 import Intro from "./pages/Intro"
@@ -12,9 +13,14 @@ function App() {
 
   return (
     <>
-    <Intro/>
-    {/* <Login/> */}
-    {/* <Signup/> */}
+    <Routes>
+      <Route path='/' element={<Intro/>}/>
+      <Route path='/login' element={<Login/>}/>
+      <Route path='/register' element={<Signup/>}/>
+      <Route path='/profile' element={<UserProfile/>}/>
+      <Route path="/profile/:userId" element={<PublicUserProfile/>} />
+       <Route path='/messages' element={<MessagingPage/>}/>
+    </Routes>
     {/* <UserProfile/> */}
     {/* <PublicUserProfile/> */}
     {/* <MessagingPage/> */}

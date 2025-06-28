@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, Mail, GraduationCap, Star, Github, Linkedin, MapPin, Calendar, 
   Edit3, Save, X, Camera, Settings, BookOpen, Code, Trophy, Users,
@@ -10,42 +10,133 @@ const UserProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [showPasswordFields, setShowPasswordFields] = useState(false);
-  
-  // Mock user data - in real app this would come from props/context/API
-  const [userData, setUserData] = useState({
-    fullName: 'John Doe',
-    email: 'john.doe@university.edu',
-    university: 'Stanford University',
-    skillLevel: 'intermediate',
-    interests: ['Web Development', 'AI/ML', 'React', 'Python'],
-    github: 'https://github.com/johndoe',
-    linkedin: 'https://linkedin.com/in/johndoe',
-    bio: 'Passionate full-stack developer with a love for creating innovative solutions. Currently exploring AI/ML and building projects that make a difference.',
-    joinDate: '2024-01-15',
-    location: 'San Francisco, CA',
-    avatar: null,
-    projects: [
-      {
-        id: 1,
-        name: 'E-commerce Platform',
-        description: 'Full-stack e-commerce solution built with React and Node.js',
-        tech: ['React', 'Node.js', 'MongoDB'],
-        link: 'https://github.com/johndoe/ecommerce'
-      },
-      {
-        id: 2,
-        name: 'Weather App',
-        description: 'Real-time weather application with beautiful UI',
-        tech: ['React', 'API Integration', 'CSS'],
-        link: 'https://github.com/johndoe/weather-app'
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [userExists, setUserExists] = useState(false);
+
+const [userData, setUserData] = useState({
+  fullName: '',
+  email: '',
+  university: '',
+  skillLevel: 'beginner',
+  interests: [],
+  socialProfiles:[],
+  bio: '',
+  joinDate: '',
+  location: '',
+  avatar: null,
+  // Keep the existing projects and stats as fallback
+  projects: [],
+  stats: {
+    projectsCompleted: 0,
+    connectionsMode: 0,
+    profileViews: 0
+  }
+});
+
+const dummyProjects = [
+  {
+    id: 1,
+    name: "E-commerce Platform",
+    description: "A full-stack e-commerce platform with React frontend and Node.js backend. Features include user authentication, product catalog, shopping cart, and payment integration.",
+    tech: ["React", "Node.js", "MongoDB", "Express", "Stripe"],
+    link: "https://github.com/username/ecommerce-platform",
+    status: "completed",
+    isActive: false,
+    needsCollaboration: false,
+    collaborators: ["John Doe", "Jane Smith"],
+    createdAt: "2024-01-15"
+  },
+  {
+    id: 2,
+    name: "AI-Powered Chat Bot",
+    description: "An intelligent chatbot using OpenAI's GPT API with natural language processing capabilities. Currently working on improving conversation flow and adding voice features.",
+    tech: ["Python", "OpenAI API", "Flask", "React", "WebSocket"],
+    link: "https://github.com/username/ai-chatbot",
+    status: "in-progress",
+    isActive: true,
+    needsCollaboration: true,
+    collaborationNeeds: ["Frontend Developer", "UI/UX Designer"],
+    collaborators: ["Alex Johnson"],
+    createdAt: "2024-02-10"
+  },
+  {
+    id: 3,
+    name: "Weather Dashboard",
+    description: "A responsive weather application with real-time data visualization, forecasts, and location-based weather alerts. Looking for contributors to add more features.",
+    tech: ["Vue.js", "D3.js", "OpenWeatherMap API", "CSS3"],
+    link: "https://github.com/username/weather-dashboard",
+    status: "in-progress",
+    isActive: true,
+    needsCollaboration: true,
+    collaborationNeeds: ["Backend Developer", "Data Analyst"],
+    collaborators: [],
+    createdAt: "2024-03-05"
+  },
+  {
+    id: 4,
+    name: "Task Management App",
+    description: "A collaborative task management application with real-time updates, team collaboration features, and productivity analytics.",
+    tech: ["React", "Firebase", "Tailwind CSS", "Chart.js"],
+    link: "https://github.com/username/task-manager",
+    status: "completed",
+    isActive: false,
+    needsCollaboration: false,
+    collaborators: ["Sarah Wilson", "Mike Chen", "Emma Davis"],
+    createdAt: "2023-12-20"
+  },
+  {
+    id: 5,
+    name: "Blockchain Voting System",
+    description: "A secure voting system built on blockchain technology ensuring transparency and immutability. Currently in development phase and needs blockchain experts.",
+    tech: ["Solidity", "Web3.js", "React", "Ethereum", "MetaMask"],
+    link: "https://github.com/username/blockchain-voting",
+    status: "in-progress",
+    isActive: true,
+    needsCollaboration: true,
+    collaborationNeeds: ["Blockchain Developer", "Security Expert", "Smart Contract Auditor"],
+    collaborators: ["David Lee"],
+    createdAt: "2024-01-28"
+  }
+];
+
+useEffect(() => {
+    setIsLoadingProfile(true);
+    
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        setUserData(prevData => ({
+          ...prevData,
+          fullName: user.name || user.fullname || '',
+          email: user.email || '',
+          university: user.university || '',
+          skillLevel: user.skillLevel || 'beginner',
+          interests: user.interests || [],
+          socialProfiles: user.socialProfiles || [],
+          bio: user.bio || '',
+          location: user.location || '',
+          joinDate: user.createdAt || user.joinDate || new Date().toISOString(),
+          // Use dummy projects if no user projects exist
+          projects: user.projects && user.projects.length > 0 ? user.projects : dummyProjects,
+          stats: user.stats || {
+            projectsCompleted: dummyProjects.filter(p => p.status === 'completed').length,
+            connectionsMode: 12, // Updated based on dummy data
+            profileViews: 45
+          }
+        }));
+        setUserExists(true);
+      } else {
+        setUserExists(false);
       }
-    ],
-    stats: {
-      projectsCompleted: 12,
-      connectionsMode: 45,
-      profileViews: 234
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      setUserExists(false);
     }
-  });
+    
+    setIsLoadingProfile(false);
+}, []);
+
 
   const [editData, setEditData] = useState({ ...userData });
   const [newProject, setNewProject] = useState({
@@ -68,18 +159,27 @@ const UserProfile = () => {
     { value: 'advanced', label: 'Advanced' }
   ];
 
-  const handleEdit = () => {
+   const handleEdit = () => {
     setIsEditing(true);
     setEditData({ ...userData });
   };
 
-  const handleSave = () => {
+   const handleSave = () => {
     setUserData({ ...editData });
     setIsEditing(false);
     setShowPasswordFields(false);
+    
+    // Update localStorage with new data
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const updatedUser = { ...currentUser, ...editData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    } catch (error) {
+      console.error('Error saving user data:', error);
+    }
   };
 
-  const handleCancel = () => {
+   const handleCancel = () => {
     setEditData({ ...userData });
     setIsEditing(false);
     setShowPasswordFields(false);
@@ -93,7 +193,7 @@ const UserProfile = () => {
     }));
   };
 
-  const handleInterestToggle = (interest) => {
+   const handleInterestToggle = (interest) => {
     setEditData(prev => ({
       ...prev,
       interests: prev.interests.includes(interest)
@@ -102,7 +202,7 @@ const UserProfile = () => {
     }));
   };
 
-  const handleAddProject = () => {
+    const handleAddProject = () => {
     if (newProject.name && newProject.description) {
       const project = {
         id: Date.now(),
@@ -122,20 +222,76 @@ const UserProfile = () => {
     }
   };
 
-  const handleDeleteProject = (projectId) => {
+    const handleDeleteProject = (projectId) => {
     setEditData(prev => ({
       ...prev,
       projects: prev.projects.filter(p => p.id !== projectId)
     }));
   };
 
-  const formatDate = (dateString) => {
+ const formatDate = (dateString) => {
+    if (!dateString) return 'Recently';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
   };
+
+  // Add this before your JSX return
+if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+ if (!userExists) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Please Login</h2>
+          <p className="text-gray-600 mb-6">You need to be logged in to view your profile.</p>
+          <button 
+            onClick={() => window.location.href = '/login'}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-300"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const getStatusColor = (status) => {
+  switch (status) {
+    case 'completed':
+      return 'bg-green-100 text-green-800';
+    case 'in-progress':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'planning':
+      return 'bg-blue-100 text-blue-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+const getStatusText = (status) => {
+  switch (status) {
+    case 'completed':
+      return 'Completed';
+    case 'in-progress':
+      return 'In Progress';
+    case 'planning':
+      return 'Planning';
+    default:
+      return 'Unknown';
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -149,7 +305,7 @@ const UserProfile = () => {
             {/* Avatar */}
             <div className="relative">
               <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                {userData.fullName.split(' ').map(n => n[0]).join('')}
+                {userData.fullName ? userData.fullName.split(' ').map(n => n[0]).join('') : 'U'}
               </div>
               {isEditing && (
                 <button className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 transition-colors duration-300">
@@ -162,12 +318,12 @@ const UserProfile = () => {
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{userData.fullName}</h1>
-                  <p className="text-gray-600 mt-1">{userData.university}</p>
+                  <h1 className="text-3xl font-bold text-gray-900">{userData.fullName || 'Your Name'}</h1>
+                  <p className="text-gray-600 mt-1">{userData.university || 'Your University'}</p>
                   <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
                     <div className="flex items-center">
                       <MapPin className="w-4 h-4 mr-1" />
-                      {userData.location}
+                       {userData.location || 'Add location'}
                     </div>
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 mr-1" />
@@ -270,15 +426,15 @@ const UserProfile = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-500">Full Name</label>
-                        <p className="text-gray-900 mt-1">{userData.fullName}</p>
+                        <p className="text-gray-900 mt-1">{userData.fullName || 'Not specified'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">Email</label>
-                        <p className="text-gray-900 mt-1">{userData.email}</p>
+                        <p className="text-gray-900 mt-1">{userData.email || 'Not specified'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">University</label>
-                        <p className="text-gray-900 mt-1">{userData.university}</p>
+                        <p className="text-gray-900 mt-1">{userData.university || 'Not specified'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">Skill Level</label>
@@ -287,7 +443,7 @@ const UserProfile = () => {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500">Bio</label>
-                      <p className="text-gray-900 mt-1">{userData.bio}</p>
+                      <p className="text-gray-900 mt-1">{userData.bio || 'No bio added yet'}</p>
                     </div>
                   </div>
                 ) : (
@@ -357,14 +513,18 @@ const UserProfile = () => {
                 
                 {!isEditing ? (
                   <div className="flex flex-wrap gap-2">
-                    {userData.interests.map((interest) => (
-                      <span
-                        key={interest}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
-                      >
-                        {interest}
-                      </span>
-                    ))}
+                    {userData.interests.length > 0 ? (
+                      userData.interests.map((interest) => (
+                        <span
+                          key={interest}
+                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                        >
+                          {interest}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-gray-500">No interests selected yet</p>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -437,11 +597,11 @@ const UserProfile = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Social Links</h3>
                 
-                {!isEditing ? (
+               {!isEditing ? (
                   <div className="space-y-3">
-                    {userData.github && (
+                    {userData.socialProfiles ? (
                       <a
-                        href={userData.github}
+                        href={userData.socialProfiles.github}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-300"
@@ -450,8 +610,10 @@ const UserProfile = () => {
                         GitHub
                         <ExternalLink className="w-3 h-3 ml-auto" />
                       </a>
+                    ) : (
+                      <p className="text-gray-500 text-sm">No GitHub profile added</p>
                     )}
-                    {userData.linkedin && (
+                    {userData.socialProfiles.linkedin ? (
                       <a
                         href={userData.linkedin}
                         target="_blank"
@@ -462,6 +624,8 @@ const UserProfile = () => {
                         LinkedIn
                         <ExternalLink className="w-3 h-3 ml-auto" />
                       </a>
+                    ) : (
+                      <p className="text-gray-500 text-sm">No LinkedIn profile added</p>
                     )}
                   </div>
                 ) : (
@@ -594,44 +758,104 @@ const UserProfile = () => {
 
             {/* Projects Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {(isEditing ? editData.projects : userData.projects).map((project) => (
-                <div key={project.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
-                    {isEditing && (
-                      <button
-                        onClick={() => handleDeleteProject(project.id)}
-                        className="text-red-600 hover:text-red-700 transition-colors duration-300"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-gray-600 mb-4">{project.description}</p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {project.tech.map((tech, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                  {project.link && (
-                    <a
-                      href={project.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-300"
-                    >
-                      View Project
-                      <ExternalLink className="w-3 h-3 ml-1" />
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
+  {(isEditing ? editData.projects : userData.projects).map((project) => (
+    <div key={project.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-300">
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
+            {project.isActive && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Active
+              </span>
+            )}
+          </div>
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+            {getStatusText(project.status)}
+          </span>
+        </div>
+        {isEditing && (
+          <button
+            onClick={() => handleDeleteProject(project.id)}
+            className="text-red-600 hover:text-red-700 transition-colors duration-300"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+      
+      <p className="text-gray-600 mb-4">{project.description}</p>
+      
+      <div className="flex flex-wrap gap-2 mb-4">
+        {project.tech.map((tech, index) => (
+          <span
+            key={index}
+            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
+          >
+            {tech}
+          </span>
+        ))}
+      </div>
+
+      {/* Collaboration Section */}
+      {project.needsCollaboration && (
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center mb-2">
+            <Users className="w-4 h-4 text-blue-600 mr-2" />
+            <span className="text-sm font-medium text-blue-800">Looking for collaborators</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {project.collaborationNeeds.map((need, index) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
+              >
+                {need}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Collaborators */}
+      {project.collaborators && project.collaborators.length > 0 && (
+        <div className="mb-4">
+          <span className="text-sm font-medium text-gray-700 mb-2 block">Collaborators:</span>
+          <div className="flex flex-wrap gap-1">
+            {project.collaborators.map((collaborator, index) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium"
+              >
+                {collaborator}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center">
+        {project.link && (
+          <a
+            href={project.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-300"
+          >
+            View Project
+            <ExternalLink className="w-3 h-3 ml-1" />
+          </a>
+        )}
+        
+        {project.needsCollaboration && (
+          <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors duration-300">
+            Join Project
+          </button>
+        )}
+      </div>
+    </div>
+  ))}
+</div>
           </div>
         )}
 

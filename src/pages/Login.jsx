@@ -1,18 +1,43 @@
 import React, { useState } from 'react';
 import { User, Mail, Lock, Code, Users, Rocket, BookOpen, Github, Linkedin } from 'lucide-react';
+import { loginUser } from '../Services/AuthServices';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 
 const Login = () => {
-    const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    university: '',
-    skillLevel: '',
-    interests: []
-  });
+    
   const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+  email: '',
+  password: ''
+});
+
+const submitHandler=()=>{
+   navigate('/register')
+  }
+
+const [isLoading, setIsLoading] = useState(false);
+
+const validateForm = () => {
+  const newErrors = {};
+  
+  if (!formData.email) {
+    newErrors.email = 'Email is required';
+  } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    newErrors.email = 'Please enter a valid email';
+  }
+  
+  if (!formData.password) {
+    newErrors.password = 'Password is required';
+  } else if (formData.password.length < 6) {
+    newErrors.password = 'Password must be at least 6 characters long';
+  }
+  
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
+
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -29,61 +54,34 @@ const Login = () => {
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validateForm()) return;
+  
+  setIsLoading(true);
+  setErrors({});
+  
+  try {
+    const response = await loginUser(formData);
     
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
-    }
+    // Store token in localStorage (or use your preferred method)
+    localStorage.setItem('token', response.data.token);
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+  
     
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
+    // Redirect to profile page after successful login
+    navigate('/profile');
     
-    if (!isLogin) {
-      if (!formData.fullName) {
-        newErrors.fullName = 'Full name is required';
-      }
-      if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Passwords do not match';
-      }
-      if (!formData.university) {
-        newErrors.university = 'University/Institution is required';
-      }
-      if (!formData.skillLevel) {
-        newErrors.skillLevel = 'Skill level is required';
-      }
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      console.log('Form submitted:', formData);
-      alert(`${isLogin ? 'Login' : 'Signup'} successful! Welcome to DevConnect.`);
-    }
-  };
-
-  const switchMode = () => {
-    setIsLogin(!isLogin);
-    setFormData({
-      fullName: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      university: '',
-      skillLevel: '',
-      interests: []
+  } catch (error) {
+    setErrors({ 
+      general: error.message || 'Login failed. Please try again.' 
     });
-    setErrors({});
-  };
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+ 
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -97,12 +95,12 @@ const Login = () => {
                 DevConnect.
               </h1>
             </div>
-            <div className="text-gray-600 text-sm">
+            {/* <div className="text-gray-600 text-sm">
               New to DevConnect? 
               <button className="text-blue-600 hover:text-blue-700 ml-1 font-semibold transition-colors duration-300">
                 Sign Up
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -119,6 +117,7 @@ const Login = () => {
                 Sign in to your account
               </p>
             </div>
+          
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
@@ -180,20 +179,27 @@ const Login = () => {
                   </a>
                 </div>
               </div>
+            <button
+  type="submit"
+  disabled={isLoading}
+  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300"
+>
+  {isLoading ? 'Signing In...' : 'Sign In'}
+</button>
 
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300"
-              >
-                Sign In
-              </button>
+{errors.general && (
+  <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+    <p className="text-red-700 text-sm">{errors.general}</p>
+  </div>
+)}
+              
             </form>
 
             <div className="mt-6 text-center">
               <p className="text-gray-600">
                 Don't have an account? 
-                <button
-                  onClick={switchMode}
+                <button 
+                   onClick={() => submitHandler()}
                   className="text-blue-600 font-semibold hover:text-blue-700 transition-colors duration-300 ml-1"
                 >
                   Sign up

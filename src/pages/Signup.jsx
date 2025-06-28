@@ -1,7 +1,23 @@
 import React, { useState } from 'react';
 import { User, Mail, Lock, Code, Users, Rocket, BookOpen, Github, Linkedin, ArrowRight, Eye, EyeOff, CheckCircle, Building, GraduationCap, Star } from 'lucide-react';
+import axios from 'axios';
+import { signupUser } from '../Services/AuthServices';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 
-const Signup = () => {
+const API_BASE_URL = 'http://localhost:3000';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+
+const SignupPage = () => {
+   const navigate = useNavigate();
+  const [apiError, setApiError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -18,6 +34,10 @@ const Signup = () => {
     bio: ''
   });
   const [errors, setErrors] = useState({});
+
+  const submitHandler=()=>{
+   navigate('/login')
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -92,12 +112,38 @@ const Signup = () => {
     setErrors({});
   };
 
-  const handleSubmit = () => {
-    if (validateStep(currentStep)) {
-      console.log('Form submitted:', formData);
+ const handleSubmit = async () => {
+  if (validateStep(currentStep)) {
+    try {
+      setIsLoading(true);
+      setApiError(''); // Clear previous errors
+      
+      const signupData = {
+        fullname: formData.fullName,  // ← Fixed: changed from fullName to fullname
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,  // ← Keep this for backend validation
+        university: formData.university,
+        skillLevel: formData.skillLevel,
+        interests: formData.interests,
+        github: formData.github || null,
+        linkedin: formData.linkedin || null,
+        bio: formData.bio || null
+      };
+
+      const result = await signupUser(signupData);
+      
+      console.log('Signup successful:', result);
       alert('Signup successful! Welcome to DevConnect.');
+      
+    } catch (error) {
+      console.error('Signup error:', error);
+      setApiError(error.message);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }
+};
 
   const techInterests = [
     'Web Development', 'Mobile Apps', 'AI/ML', 'Data Science',
@@ -110,21 +156,22 @@ const Signup = () => {
     { value: 'intermediate', label: 'Intermediate', desc: 'Have some experience with projects' },
     { value: 'advanced', label: 'Advanced', desc: 'Experienced with complex projects' }
   ];
+
   return (
- <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              
+              <Code className="w-8 h-8 text-blue-600 mr-3" />
               <h1 className="text-2xl font-bold text-gray-900">
-                DevConnect.
+                DevConnect
               </h1>
             </div>
             <div className="text-gray-600 text-sm">
               Already have an account? 
-              <button className="text-blue-600 hover:text-blue-700 ml-1 font-semibold transition-colors duration-300">
+              <button onClick={() => submitHandler()} className="text-blue-600 hover:text-blue-700 ml-1 font-semibold transition-colors duration-300">
                 Sign In
               </button>
             </div>
@@ -470,13 +517,31 @@ const Signup = () => {
                   >
                     Back
                   </button>
-                  <button
-                    onClick={handleSubmit}
-                    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 flex items-center group"
-                  >
-                    Create Account
-                    <CheckCircle className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform duration-300" />
-                  </button>
+                  {apiError && (
+  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+    <p className="text-red-600 text-sm">{apiError}</p>
+  </div>
+)}
+
+                 <button
+  onClick={handleSubmit}
+  disabled={isLoading}
+  className={`bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 flex items-center group ${
+    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+  }`}
+>
+  {isLoading ? (
+    <>
+      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+      Creating Account...
+    </>
+  ) : (
+    <>
+      Create Account
+      <CheckCircle className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform duration-300" />
+    </>
+  )}
+                 </button>
                 </div>
               </div>
             </div>
@@ -484,8 +549,7 @@ const Signup = () => {
         </div>
       </div>
     </div>
-  
-  )
-}
+  );
+};
 
-export default Signup
+export default SignupPage;

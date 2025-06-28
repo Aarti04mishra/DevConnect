@@ -1,21 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { searchUsers } from '../Services/AuthServices';
 import { Search, Bell, User, Menu, Code, MessageCircle, Users, Settings, LogOut, X } from 'lucide-react';
+import { useSocket } from '../Context/SocketContext';
+import { useNotifications } from '../hooks/useNotifications';
 
 const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [notificationCount] = useState(3);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+
+  const navigate = useNavigate();
+  
+  // Socket integration
+  const { isConnected } = useSocket();
+  const {
+    notifications,
+    unreadCount,
+    isLoading: isLoadingNotifications,
+    fetchNotifications,
+    markAsRead
+  } = useNotifications();
 
   const toggleProfile = () => setIsProfileOpen(!isProfileOpen);
+
+  const debouncedSearch = useCallback(
+    debounce(async (query) => {
+      if (query.trim().length < 2) {
+        setSearchResults([]);
+        setIsSearchOpen(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const response = await searchUsers(query);
+        if (response.success) {
+          setSearchResults(response.data);
+          setIsSearchOpen(true);
+        }
+      } catch (error) {
+        console.error('Search failed:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300),
+    []
+  );
   
   const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-    setIsSearchOpen(e.target.value.length > 0);
+    const value = e.target.value;
+    setSearchQuery(value);
+    debouncedSearch(value);
   };
 
   const handleSearchFocus = () => {
-    if (searchQuery.length > 0) {
+    if (searchQuery.length > 1 && searchResults.length > 0) {
       setIsSearchOpen(true);
     }
   };
@@ -24,28 +68,63 @@ const Navbar = () => {
     setTimeout(() => setIsSearchOpen(false), 200);
   };
 
-  const searchResults = {
-    developers: [
-      { id: 1, name: 'John Smith', role: 'Frontend Developer', avatar: 'JS' },
-      { id: 2, name: 'Sarah Johnson', role: 'Full Stack Developer', avatar: 'SJ' },
-      { id: 3, name: 'Mike Chen', role: 'Backend Developer', avatar: 'MC' }
-    ],
-    projects: [
-      { id: 1, name: 'E-commerce Platform', type: 'React + Node.js' },
-      { id: 2, name: 'Mobile Banking App', type: 'React Native' },
-      { id: 3, name: 'AI Chat Bot', type: 'Python + TensorFlow' }
-    ]
+  const handleUserClick = (userId) => {
+    console.log(userId);
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    navigate(`/profile/${userId}`);
   };
 
-  const filteredDevelopers = searchResults.developers.filter(dev => 
-    dev.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dev.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearchOpen(false);
+  };
+  
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
 
-  const filteredProjects = searchResults.projects.filter(project => 
-    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.type.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Updated notification handlers using the hook
+  const handleNotificationClick = async () => {
+    setIsNotificationOpen(!isNotificationOpen);
+    
+    if (!isNotificationOpen && notifications.length === 0) {
+      await fetchNotifications();
+    }
+  };
+
+  const handleNotificationItemClick = async (notification) => {
+    if (!notification.isRead) {
+      await markAsRead(notification._id);
+    }
+    
+    // Navigate based on notification type
+    if (notification.type === 'follow') {
+      navigate(`/profile/${notification.sender._id}`);
+    }
+    
+    setIsNotificationOpen(false);
+  };
+
+  const formatNotificationTime = (dateString) => {
+    const now = new Date();
+    const notificationTime = new Date(dateString);
+    const diffInMinutes = Math.floor((now - notificationTime) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+  };
 
   return (
     <>
@@ -60,6 +139,14 @@ const Navbar = () => {
 
             {/* Right side items */}
             <div className="flex items-center space-x-2 md:space-x-4">
+              {/* Connection Status Indicator */}
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-xs text-gray-500 hidden md:block">
+                  {isConnected ? 'Online' : 'Offline'}
+                </span>
+              </div>
+
               {/* Search Box */}
               <div className="relative hidden sm:block">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -67,63 +154,69 @@ const Navbar = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search developers, projects..."
+                  placeholder="Search developers..."
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onFocus={handleSearchFocus}
                   onBlur={handleSearchBlur}
-                  className="bg-gray-50 text-gray-900 placeholder-gray-500 pl-10 pr-4 py-2 w-48 md:w-64 lg:w-80 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all duration-200"
+                  className="bg-gray-50 text-gray-900 placeholder-gray-500 pl-10 pr-10 py-2 w-48 md:w-64 lg:w-80 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all duration-200"
                 />
                 
-                {isSearchOpen && (searchQuery.length > 0) && (
+                {/* Clear search button */}
+                {searchQuery && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                  </button>
+                )}
+                
+                {isSearchOpen && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
-                    {filteredDevelopers.length > 0 && (
+                    {isSearching && (
+                      <div className="p-4 text-center">
+                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                        <p className="text-sm text-gray-500 mt-2">Searching...</p>
+                      </div>
+                    )}
+                    
+                    {!isSearching && searchResults.length > 0 && (
                       <div className="p-2">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">Developers</h3>
-                        {filteredDevelopers.slice(0, 3).map(dev => (
-                          <a
-                            key={dev.id}
-                            href="#"
-                            className="flex items-center px-3 py-2 hover:bg-gray-50 rounded-md transition-colors duration-200"
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">
+                          Developers ({searchResults.length})
+                        </h3>
+                        {searchResults.map(user => (
+                          <button
+                            key={user._id}
+                            onClick={() => handleUserClick(user._id)}
+                            className="w-full flex items-center px-3 py-2 hover:bg-gray-50 rounded-md transition-colors duration-200 text-left"
                           >
                             <div className="h-8 w-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3">
-                              {dev.avatar}
+                              {user.profile?.avatar ? (
+                                <img 
+                                  src={user.profile.avatar} 
+                                  alt={user.fullname}
+                                  className="h-8 w-8 rounded-full object-cover"
+                                />
+                              ) : (
+                                user.fullname.charAt(0).toUpperCase()
+                              )}
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{dev.name}</p>
-                              <p className="text-xs text-gray-500">{dev.role}</p>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900">{user.fullname}</p>
+                              <p className="text-xs text-gray-500">
+                                {user.skillLevel} • {user.university}
+                              </p>
                             </div>
-                          </a>
+                          </button>
                         ))}
                       </div>
                     )}
                     
-                    {filteredProjects.length > 0 && (
-                      <div className="p-2 border-t border-gray-100">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">Projects</h3>
-                        {filteredProjects.slice(0, 3).map(project => (
-                          <a
-                            key={project.id}
-                            href="#"
-                            className="flex items-center px-3 py-2 hover:bg-gray-50 rounded-md transition-colors duration-200"
-                          >
-                            <div className="h-8 w-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-lg flex items-center justify-center mr-3">
-                              <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                              </svg>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{project.name}</p>
-                              <p className="text-xs text-gray-500">{project.type}</p>
-                            </div>
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {filteredDevelopers.length === 0 && filteredProjects.length === 0 && (
+                    {!isSearching && searchQuery.length >= 2 && searchResults.length === 0 && (
                       <div className="p-4 text-center">
-                        <p className="text-sm text-gray-500">No results found for "{searchQuery}"</p>
+                        <p className="text-sm text-gray-500">No developers found for "{searchQuery}"</p>
                       </div>
                     )}
                   </div>
@@ -137,14 +230,85 @@ const Navbar = () => {
 
               {/* Notifications */}
               <div className="relative">
-                <button className="p-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 relative">
+                <button 
+                  onClick={handleNotificationClick}
+                  className="p-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 relative"
+                >
                   <Bell className="h-5 w-5" />
-                  {notificationCount > 0 && (
+                  {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
-                      {notificationCount}
+                      {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
                 </button>
+
+                {/* Notification Dropdown */}
+                {isNotificationOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden">
+                    <div className="p-4 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                        <button
+                          onClick={() => setIsNotificationOpen(false)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="max-h-80 overflow-y-auto">
+                      {isLoadingNotifications ? (
+                        <div className="p-6 text-center">
+                          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                          <p className="text-sm text-gray-500 mt-2">Loading notifications...</p>
+                        </div>
+                      ) : notifications.length === 0 ? (
+                        <div className="p-6 text-center">
+                          <Bell className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500">No notifications yet</p>
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification._id}
+                            onClick={() => handleNotificationItemClick(notification)}
+                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors duration-200 ${
+                              !notification.isRead ? 'bg-blue-50' : ''
+                            }`}
+                          >
+                            <div className="flex items-start space-x-3">
+                              <div className="flex-shrink-0">
+                                <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                                  {notification.sender?.fullname?.charAt(0) || 'U'}
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-900 font-medium">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {formatNotificationTime(notification.createdAt)}
+                                </p>
+                              </div>
+                              {!notification.isRead && (
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    
+                    {notifications.length > 0 && (
+                      <div className="p-3 border-t border-gray-200 text-center">
+                        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                          View All Notifications
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Profile Dropdown */}

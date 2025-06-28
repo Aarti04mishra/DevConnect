@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import { User, Mail, Lock, Code, Users, Rocket, BookOpen, Github, Linkedin, ArrowRight, Eye, EyeOff, Star, Trophy, Zap } from 'lucide-react';
-
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 const Intro = () => {
   const [currentView, setCurrentView] = useState('intro');
+   const navigate = useNavigate();
+
+  const submitHandler=()=>{
+   navigate('/login')
+  }
+
 
   // Auth Page View
   return (
@@ -65,7 +71,7 @@ const Intro = () => {
                 Join thousands of student developers who are already building amazing projects together.
               </p>
               <button
-                onClick={() => setCurrentView('auth')}
+                onClick={() => submitHandler()}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-all duration-300 hover:shadow-lg flex items-center justify-center mx-auto group"
               >
                 Get Started Now

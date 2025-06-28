@@ -1,81 +1,123 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams,useNavigate  } from 'react-router-dom';
+import { getUserProfile } from '../Services/AuthServices'; 
 import { 
   User, Mail, GraduationCap, Star, Github, Linkedin, MapPin, Calendar, 
   MessageCircle, UserPlus, Send, ExternalLink, Code, Trophy, Users,
   Heart, BookOpen, Zap, Award, Clock, Eye, ChevronRight, X
 } from 'lucide-react';
 import Navbar from '../Components/Navbar';
+import { followUser, unfollowUser, checkFollowStatus } from '../Services/AuthServices';
+
 
 const PublicUserProfile = () => {
+ const { userId } = useParams(); 
+  const [userData, setUserData] = useState(null); 
+  const [loading, setLoading] = useState(true); 
+  const [error, setError] = useState(null); 
   const [activeTab, setActiveTab] = useState('overview');
   const [showCollaborationModal, setShowCollaborationModal] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
+  // const [isFollowing, setIsFollowing] = useState(false);
   const [collaborationMessage, setCollaborationMessage] = useState('');
   const [selectedProject, setSelectedProject] = useState('');
-  
-  // Mock user data - this would come from props/API in real app
-  const userData = {
-    fullName: 'Sarah Chen',
-    email: 'sarah.chen@university.edu', // This might be hidden in real app
-    university: 'MIT',
-    skillLevel: 'advanced',
-    interests: ['AI/ML', 'Web Development', 'Data Science', 'Python', 'React', 'TensorFlow'],
-    github: 'https://github.com/sarahchen',
-    linkedin: 'https://linkedin.com/in/sarahchen',
-    bio: 'AI/ML enthusiast and full-stack developer passionate about building intelligent systems that solve real-world problems. Always excited to collaborate on innovative projects!',
-    joinDate: '2023-03-15',
-    location: 'Boston, MA',
-    avatar: null,
-    isOnline: true,
-    lastSeen: '2 hours ago',
-    projects: [
-      {
-        id: 1,
-        name: 'Smart City Traffic Optimizer',
-        description: 'AI-powered traffic management system using computer vision and machine learning to optimize traffic flow in urban areas.',
-        tech: ['Python', 'TensorFlow', 'OpenCV', 'FastAPI', 'React'],
-        link: 'https://github.com/sarahchen/traffic-optimizer',
-        status: 'active',
-        lookingForCollaborators: true,
-        collaboratorsNeeded: ['Backend Developer', 'UI/UX Designer']
-      },
-      {
-        id: 2,
-        name: 'Medical Image Analysis',
-        description: 'Deep learning model for automated diagnosis of medical conditions from X-ray images.',
-        tech: ['Python', 'PyTorch', 'Flask', 'Docker'],
-        link: 'https://github.com/sarahchen/medical-ai',
-        status: 'completed',
-        lookingForCollaborators: false
-      },
-      {
-        id: 3,
-        name: 'Sustainable Energy Dashboard',
-        description: 'Real-time monitoring and prediction system for renewable energy consumption and generation.',
-        tech: ['React', 'Node.js', 'MongoDB', 'Chart.js', 'IoT'],
-        link: 'https://github.com/sarahchen/energy-dashboard',
-        status: 'active',
-        lookingForCollaborators: true,
-        collaboratorsNeeded: ['IoT Specialist', 'Data Analyst']
+  // const [followLoading, setFollowLoading] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+const [isLoading, setIsLoading] = useState(false);
+const [followLoading, setFollowLoading] = useState(false);
+const navigate = useNavigate();
+
+useEffect(() => {
+  const checkStatus = async () => {
+    if (userId) {
+      try {
+        setIsLoading(true);
+        const response = await checkFollowStatus(userId);
+        if (response.success) {
+          setIsFollowing(response.data.isFollowing);
+        }
+      } catch (error) {
+        console.error('Error checking follow status:', error);
+      } finally {
+        setIsLoading(false);
       }
-    ],
-    stats: {
-      projectsCompleted: 8,
-      collaborations: 15,
-      profileViews: 456,
-      githubStars: 234
-    },
-    achievements: [
-      { name: 'Top Collaborator', icon: Users, color: 'blue' },
-      { name: 'Innovation Award', icon: Zap, color: 'yellow' },
-      { name: 'Code Quality', icon: Award, color: 'green' }
-    ],
-    recentActivity: [
-      { action: 'Updated Smart City Traffic Optimizer', time: '2 hours ago', icon: Code },
-      { action: 'Collaborated on Climate Data Analysis', time: '1 day ago', icon: Users },
-      { action: 'Completed Medical Image Analysis', time: '3 days ago', icon: Trophy }
-    ]
+    }
   };
+
+  checkStatus();
+}, [userId]);
+
+const handleFollowToggle = async () => {
+  try {
+    setFollowLoading(true);
+    
+    if (isFollowing) {
+      // Unfollow
+      const response = await unfollowUser(userId);
+      if (response.success) {
+        setIsFollowing(false);
+        // Optional: Show success message
+        console.log('Unfollowed successfully');
+      }
+    } else {
+      // Follow - This will trigger the notification
+      const response = await followUser(userId);
+      if (response.success) {
+        setIsFollowing(true);
+        // Optional: Show success message
+        console.log('Followed successfully - notification sent!');
+      }
+    }
+  } catch (error) {
+    console.error('Follow/Unfollow error:', error);
+    // Optional: Show error message
+  } finally {
+    setFollowLoading(false);
+  }
+};
+  
+  useEffect(() => {
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const response = await getUserProfile(userId);
+      if (response.success) {
+        setUserData(response.data);
+        
+        // Check follow status
+        const followStatus = await checkFollowStatus(userId);
+        if (followStatus.success) {
+          setIsFollowing(followStatus.data.isFollowing);
+        }
+      } else {
+        setError('Failed to load user profile');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to load user profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (userId) {
+    fetchUserData();
+  }
+}, [userId]);
+
+
+   if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center h-96">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <p className="ml-3 text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  
+ 
 
   const myProjects = [
     { id: 1, name: 'Weather Prediction App' },
@@ -83,9 +125,28 @@ const PublicUserProfile = () => {
     { id: 3, name: 'E-commerce Platform' }
   ];
 
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing);
-  };
+  const handleFollow = async () => {
+  try {
+    setFollowLoading(true);
+    
+    if (isFollowing) {
+      const response = await unfollowUser(userId);
+      if (response.success) {
+        setIsFollowing(false);
+      }
+    } else {
+      const response = await followUser(userId);
+      if (response.success) {
+        setIsFollowing(true);
+      }
+    }
+  } catch (error) {
+    console.error('Follow/Unfollow error:', error);
+    // You can add a toast notification here
+  } finally {
+    setFollowLoading(false);
+  }
+};
 
   const handleSendCollaboration = () => {
     if (collaborationMessage.trim()) {
@@ -99,6 +160,40 @@ const PublicUserProfile = () => {
       setSelectedProject('');
     }
   };
+
+const handleMessageClick = () => {
+  // Ensure userData is available
+  if (!userData || !userId) {
+    console.error('User data not available');
+    return;
+  }
+
+  // Create a comprehensive user object for messaging
+  const selectedUser = {
+    id: userId,
+    name: userData.fullname || userData.name || 'Unknown User',
+    avatar: userData.fullname 
+      ? userData.fullname.split(' ').map(n => n[0]).join('').toUpperCase()
+      : userData.name?.charAt(0).toUpperCase() || 'U',
+    isOnline: userData.isOnline || false,
+    lastSeen: userData.lastSeen || 'Recently',
+    project: 'Direct Message',
+    role: userData.university || userData.role || 'Developer',
+    // Additional profile data that might be useful
+    email: userData.email,
+    profilePicture: userData.profilePicture || userData.avatar,
+    location: userData.location,
+    skills: userData.skills || []
+  };
+
+  console.log('Navigating to messages with user:', selectedUser); // Debug log
+
+  navigate('/messages', {
+    state: {
+      selectedUser: selectedUser
+    }
+  });
+};
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -129,7 +224,7 @@ const PublicUserProfile = () => {
             {/* Avatar */}
             <div className="relative">
               <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                {userData.fullName.split(' ').map(n => n[0]).join('')}
+                {userData.fullname.split(' ').map(n => n[0]).join('')}
               </div>
               {userData.isOnline && (
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
@@ -140,13 +235,9 @@ const PublicUserProfile = () => {
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{userData.fullName}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900">{userData.fullname}</h1>
                   <p className="text-gray-600 mt-1">{userData.university}</p>
                   <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {userData.location}
-                    </div>
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 mr-1" />
                       Joined {formatDate(userData.joinDate)}
@@ -166,28 +257,59 @@ const PublicUserProfile = () => {
                     <Send className="w-4 h-4 mr-2" />
                     Collaborate
                   </button>
+                  {/* <button
+  onClick={handleFollow}
+  disabled={followLoading}
+  className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 flex items-center ${
+    followLoading 
+      ? 'bg-gray-300 cursor-not-allowed' 
+      : isFollowing 
+        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
+        : 'bg-green-600 hover:bg-green-700 text-white'
+  }`}
+>
+                   {followLoading ? (
+    <>
+      <div className="w-4 h-4 mr-2 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+      {isFollowing ? 'Unfollowing...' : 'Following...'}
+    </>
+  ) : isFollowing ? (
+    <>
+      <User className="w-4 h-4 mr-2" />
+      Following
+    </>
+  ) : (
+    <>
+      <UserPlus className="w-4 h-4 mr-2" />
+      Follow
+    </>
+  )}
+                  </button> */}
+
                   <button
-                    onClick={handleFollow}
-                    className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 flex items-center ${
-                      isFollowing 
-                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
-                        : 'bg-green-600 hover:bg-green-700 text-white'
-                    }`}
-                  >
-                    {isFollowing ? (
-                      <>
-                        <User className="w-4 h-4 mr-2" />
-                        Following
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Follow
-                      </>
-                    )}
+  onClick={handleFollowToggle}
+  disabled={followLoading || isLoading}
+  className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+    isFollowing
+      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+      : 'bg-blue-600 text-white hover:bg-blue-700'
+  } ${(followLoading || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+>
+  {followLoading ? (
+    <div className="flex items-center">
+      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+      {isFollowing ? 'Unfollowing...' : 'Following...'}
+    </div>
+  ) : (
+    isFollowing ? 'Following' : 'Follow'
+  )}
                   </button>
-                  <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center">
-                    <MessageCircle className="w-4 h-4" />
+                  <button
+  onClick={handleMessageClick}
+  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-medium transition-all duration-300 flex items-center"
+>
+  <MessageCircle className="w-4 h-4 mr-2" />
+  Message
                   </button>
                 </div>
               </div>
@@ -197,25 +319,25 @@ const PublicUserProfile = () => {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{userData.stats.projectsCompleted}</div>
+              <div className="text-2xl font-bold text-gray-900">0</div>
               <div className="text-sm text-gray-600">Projects</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{userData.stats.collaborations}</div>
-              <div className="text-sm text-gray-600">Collaborations</div>
+              <div className="text-2xl font-bold text-gray-900">{userData.stats.connectionsCount}</div>
+              <div className="text-sm text-gray-600">Connections</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{userData.stats.profileViews}</div>
+              <div className="text-2xl font-bold text-gray-900">{userData.stats.reputation}</div>
               <div className="text-sm text-gray-600">Profile Views</div>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
+            {/* <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold text-gray-900">{userData.stats.githubStars}</div>
               <div className="text-sm text-gray-600">GitHub Stars</div>
-            </div>
+            </div> */}
           </div>
 
           {/* Achievements */}
-          <div className="mt-6">
+          {/* <div className="mt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">Achievements</h3>
             <div className="flex flex-wrap gap-3">
               {userData.achievements.map((achievement, index) => {
@@ -228,7 +350,7 @@ const PublicUserProfile = () => {
                 );
               })}
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -320,7 +442,7 @@ const PublicUserProfile = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  {userData.projects.slice(0, 2).map((project) => (
+                  {/* {userData.projects.slice(0, 2).map((project) => (
                     <div key={project.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
@@ -380,7 +502,7 @@ const PublicUserProfile = () => {
                         )}
                       </div>
                     </div>
-                  ))}
+                  ))} */}
                 </div>
               </div>
             </div>
@@ -391,9 +513,9 @@ const PublicUserProfile = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Connect</h3>
                 <div className="space-y-3">
-                  {userData.github && (
+                  {userData.socialProfiles.github && (
                     <a
-                      href={userData.github}
+                      href={userData.socialProfiles.github}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-300"
@@ -403,7 +525,7 @@ const PublicUserProfile = () => {
                       <ExternalLink className="w-3 h-3 ml-auto" />
                     </a>
                   )}
-                  {userData.linkedin && (
+                  {userData.socialProfiles.linkedin && (
                     <a
                       href={userData.linkedin}
                       target="_blank"
@@ -422,7 +544,7 @@ const PublicUserProfile = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
                 <div className="space-y-3">
-                  {userData.recentActivity.map((activity, index) => {
+                  {/* {userData.recentActivity.map((activity, index) => {
                     const Icon = activity.icon;
                     return (
                       <div key={index} className="flex items-start space-x-3">
@@ -435,7 +557,7 @@ const PublicUserProfile = () => {
                         </div>
                       </div>
                     );
-                  })}
+                  })} */}
                 </div>
               </div>
             </div>
@@ -457,7 +579,7 @@ const PublicUserProfile = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {userData.projects.map((project) => (
+              {/* {userData.projects.map((project) => (
                 <div key={project.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
@@ -517,7 +639,7 @@ const PublicUserProfile = () => {
                     )}
                   </div>
                 </div>
-              ))}
+              ))} */}
             </div>
           </div>
         )}
@@ -526,7 +648,7 @@ const PublicUserProfile = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">Activity Timeline</h2>
             <div className="space-y-6">
-              {userData.recentActivity.map((activity, index) => {
+              {/* {userData.recentActivity.map((activity, index) => {
                 const Icon = activity.icon;
                 return (
                   <div key={index} className="flex items-start space-x-4">
@@ -539,7 +661,7 @@ const PublicUserProfile = () => {
                     </div>
                   </div>
                 );
-              })}
+              })} */}
               <div className="text-center py-8">
                 <p className="text-gray-500">End of activity timeline</p>
               </div>
@@ -573,11 +695,11 @@ const PublicUserProfile = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select a project...</option>
-                  {myProjects.map((project) => (
+                  {/* {myProjects.map((project) => (
                     <option key={project.id} value={project.id}>
                       {project.name}
                     </option>
-                  ))}
+                  ))} */}
                 </select>
               </div>
               
