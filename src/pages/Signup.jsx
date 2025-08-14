@@ -4,10 +4,10 @@ import axios from 'axios';
 import { signupUser } from '../Services/AuthServices';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = 'http://localhost:3000';
+// const API_BASE_URL = 'http://localhost:3000';
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.VITE_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -134,7 +134,7 @@ const SignupPage = () => {
       const result = await signupUser(signupData);
       
       console.log('Signup successful:', result);
-      alert('Signup successful! Welcome to DevConnect.');
+     navigate('/home')
       
     } catch (error) {
       console.error('Signup error:', error);

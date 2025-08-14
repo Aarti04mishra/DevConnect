@@ -217,6 +217,7 @@ export const SocketProvider = ({ children }) => {
         window.dispatchEvent(new CustomEvent('conversationUpdated', { detail: data }));
       });
 
+
       // Heartbeat to maintain connection
       const heartbeatInterval = setInterval(() => {
         if (newSocket.connected) {

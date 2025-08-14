@@ -17,6 +17,7 @@ import {
 import MessageBox from "../Components/MessageBox"
 import Navbar from '../Components/Navbar';
 import ShareWorkModal from '../Components/ShareWorkModal';
+import PostFeed from '../Components/PostFeed';
 
 
 const home = () => {
@@ -187,59 +188,7 @@ const closeShareModal = () => {
 
           {/* Main Content - Projects Feed */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="space-y-6">
-                {projects.map((project) => (
-                  <div key={project.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:border-purple-200">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center">
-                        <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full flex items-center justify-center mr-4">
-                          <span className="text-xl">{project.avatar}</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center">
-                            <h3 className="font-semibold text-gray-900 mr-2">{project.author}</h3>
-                            {project.verified && (
-                              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                                <span className="text-white text-xs">✓</span>
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600">{project.role}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                        {project.rating}
-                        <span className="mx-2">•</span>
-                        {project.timeAgo}
-                        <button className="ml-3 p-1 rounded-full hover:bg-gray-100 transition-colors duration-200">
-                          <Share2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-                        {project.icon}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-gray-900 mb-2 text-lg">{project.title}</h3>
-                        <p className="text-gray-600 text-sm mb-4 leading-relaxed">{project.description}</p>
-
-                        <div className="flex flex-wrap gap-2">
-                          {project.tags.map((tag, index) => (
-                            <span key={index} className="px-3 py-1 bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 rounded-full text-xs font-medium border border-purple-100">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <PostFeed/>
           </div>
 
           {/* Right Sidebar */}

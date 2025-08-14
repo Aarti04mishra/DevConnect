@@ -5,6 +5,7 @@ import {
   ExternalLink, Plus, Trash2, Eye, EyeOff
 } from 'lucide-react';
 import Navbar from '../Components/Navbar';
+import { getProjects } from '../Services/AuthServices';
 
 const UserProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -33,108 +34,126 @@ const [userData, setUserData] = useState({
   }
 });
 
-const dummyProjects = [
-  {
-    id: 1,
-    name: "E-commerce Platform",
-    description: "A full-stack e-commerce platform with React frontend and Node.js backend. Features include user authentication, product catalog, shopping cart, and payment integration.",
-    tech: ["React", "Node.js", "MongoDB", "Express", "Stripe"],
-    link: "https://github.com/username/ecommerce-platform",
-    status: "completed",
-    isActive: false,
-    needsCollaboration: false,
-    collaborators: ["John Doe", "Jane Smith"],
-    createdAt: "2024-01-15"
-  },
-  {
-    id: 2,
-    name: "AI-Powered Chat Bot",
-    description: "An intelligent chatbot using OpenAI's GPT API with natural language processing capabilities. Currently working on improving conversation flow and adding voice features.",
-    tech: ["Python", "OpenAI API", "Flask", "React", "WebSocket"],
-    link: "https://github.com/username/ai-chatbot",
-    status: "in-progress",
-    isActive: true,
-    needsCollaboration: true,
-    collaborationNeeds: ["Frontend Developer", "UI/UX Designer"],
-    collaborators: ["Alex Johnson"],
-    createdAt: "2024-02-10"
-  },
-  {
-    id: 3,
-    name: "Weather Dashboard",
-    description: "A responsive weather application with real-time data visualization, forecasts, and location-based weather alerts. Looking for contributors to add more features.",
-    tech: ["Vue.js", "D3.js", "OpenWeatherMap API", "CSS3"],
-    link: "https://github.com/username/weather-dashboard",
-    status: "in-progress",
-    isActive: true,
-    needsCollaboration: true,
-    collaborationNeeds: ["Backend Developer", "Data Analyst"],
-    collaborators: [],
-    createdAt: "2024-03-05"
-  },
-  {
-    id: 4,
-    name: "Task Management App",
-    description: "A collaborative task management application with real-time updates, team collaboration features, and productivity analytics.",
-    tech: ["React", "Firebase", "Tailwind CSS", "Chart.js"],
-    link: "https://github.com/username/task-manager",
-    status: "completed",
-    isActive: false,
-    needsCollaboration: false,
-    collaborators: ["Sarah Wilson", "Mike Chen", "Emma Davis"],
-    createdAt: "2023-12-20"
-  },
-  {
-    id: 5,
-    name: "Blockchain Voting System",
-    description: "A secure voting system built on blockchain technology ensuring transparency and immutability. Currently in development phase and needs blockchain experts.",
-    tech: ["Solidity", "Web3.js", "React", "Ethereum", "MetaMask"],
-    link: "https://github.com/username/blockchain-voting",
-    status: "in-progress",
-    isActive: true,
-    needsCollaboration: true,
-    collaborationNeeds: ["Blockchain Developer", "Security Expert", "Smart Contract Auditor"],
-    collaborators: ["David Lee"],
-    createdAt: "2024-01-28"
-  }
-];
+// const dummyProjects = [
+//   {
+//     id: 1,
+//     name: "E-commerce Platform",
+//     description: "A full-stack e-commerce platform with React frontend and Node.js backend. Features include user authentication, product catalog, shopping cart, and payment integration.",
+//     tech: ["React", "Node.js", "MongoDB", "Express", "Stripe"],
+//     link: "https://github.com/username/ecommerce-platform",
+//     status: "completed",
+//     isActive: false,
+//     needsCollaboration: false,
+//     collaborators: ["John Doe", "Jane Smith"],
+//     createdAt: "2024-01-15"
+//   },
+//   {
+//     id: 2,
+//     name: "AI-Powered Chat Bot",
+//     description: "An intelligent chatbot using OpenAI's GPT API with natural language processing capabilities. Currently working on improving conversation flow and adding voice features.",
+//     tech: ["Python", "OpenAI API", "Flask", "React", "WebSocket"],
+//     link: "https://github.com/username/ai-chatbot",
+//     status: "in-progress",
+//     isActive: true,
+//     needsCollaboration: true,
+//     collaborationNeeds: ["Frontend Developer", "UI/UX Designer"],
+//     collaborators: ["Alex Johnson"],
+//     createdAt: "2024-02-10"
+//   },
+//   {
+//     id: 3,
+//     name: "Weather Dashboard",
+//     description: "A responsive weather application with real-time data visualization, forecasts, and location-based weather alerts. Looking for contributors to add more features.",
+//     tech: ["Vue.js", "D3.js", "OpenWeatherMap API", "CSS3"],
+//     link: "https://github.com/username/weather-dashboard",
+//     status: "in-progress",
+//     isActive: true,
+//     needsCollaboration: true,
+//     collaborationNeeds: ["Backend Developer", "Data Analyst"],
+//     collaborators: [],
+//     createdAt: "2024-03-05"
+//   },
+//   {
+//     id: 4,
+//     name: "Task Management App",
+//     description: "A collaborative task management application with real-time updates, team collaboration features, and productivity analytics.",
+//     tech: ["React", "Firebase", "Tailwind CSS", "Chart.js"],
+//     link: "https://github.com/username/task-manager",
+//     status: "completed",
+//     isActive: false,
+//     needsCollaboration: false,
+//     collaborators: ["Sarah Wilson", "Mike Chen", "Emma Davis"],
+//     createdAt: "2023-12-20"
+//   },
+//   {
+//     id: 5,
+//     name: "Blockchain Voting System",
+//     description: "A secure voting system built on blockchain technology ensuring transparency and immutability. Currently in development phase and needs blockchain experts.",
+//     tech: ["Solidity", "Web3.js", "React", "Ethereum", "MetaMask"],
+//     link: "https://github.com/username/blockchain-voting",
+//     status: "in-progress",
+//     isActive: true,
+//     needsCollaboration: true,
+//     collaborationNeeds: ["Blockchain Developer", "Security Expert", "Smart Contract Auditor"],
+//     collaborators: ["David Lee"],
+//     createdAt: "2024-01-28"
+//   }
+// ];
 
 useEffect(() => {
-    setIsLoadingProfile(true);
-    
-    try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
+    const loadUserData = async () => {
+      setIsLoadingProfile(true);
+      
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          
+          // Fetch actual projects from backend
+          const projectsData = await getProjects();
+          
+          setUserData(prevData => ({
+            ...prevData,
+            fullName: user.name || user.fullname || '',
+            email: user.email || '',
+            university: user.university || '',
+            skillLevel: user.skillLevel || 'beginner',
+            interests: user.interests || [],
+            socialProfiles: user.socialProfiles || [],
+            bio: user.bio || '',
+            location: user.location || '',
+            joinDate: user.createdAt || user.joinDate || new Date().toISOString(),
+            // Use actual projects from backend
+            projects: projectsData.projects || [],
+            stats: {
+              projectsCompleted: projectsData.stats?.projectsCompleted || 0,
+              connectionsMode: projectsData.stats?.connectionsMode || 0,
+              profileViews: projectsData.stats?.profileViews || 0
+            }
+          }));
+          setUserExists(true);
+        } else {
+          setUserExists(false);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        // Fallback to dummy data if API fails
         setUserData(prevData => ({
           ...prevData,
-          fullName: user.name || user.fullname || '',
-          email: user.email || '',
-          university: user.university || '',
-          skillLevel: user.skillLevel || 'beginner',
-          interests: user.interests || [],
-          socialProfiles: user.socialProfiles || [],
-          bio: user.bio || '',
-          location: user.location || '',
-          joinDate: user.createdAt || user.joinDate || new Date().toISOString(),
-          // Use dummy projects if no user projects exist
-          projects: user.projects && user.projects.length > 0 ? user.projects : dummyProjects,
-          stats: user.stats || {
+          projects: dummyProjects,
+          stats: {
             projectsCompleted: dummyProjects.filter(p => p.status === 'completed').length,
-            connectionsMode: 12, // Updated based on dummy data
+            connectionsMode: 12,
             profileViews: 45
           }
         }));
         setUserExists(true);
-      } else {
-        setUserExists(false);
       }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-      setUserExists(false);
-    }
-    
-    setIsLoadingProfile(false);
+      
+      setIsLoadingProfile(false);
+    };
+
+    loadUserData();
 }, []);
 
 
@@ -267,12 +286,14 @@ if (isLoadingProfile) {
     );
   }
 
-  const getStatusColor = (status) => {
+ const getStatusColor = (status) => {
   switch (status) {
     case 'completed':
       return 'bg-green-100 text-green-800';
+    case 'active':
     case 'in-progress':
       return 'bg-yellow-100 text-yellow-800';
+    case 'collaborative':
     case 'planning':
       return 'bg-blue-100 text-blue-800';
     default:
@@ -284,6 +305,10 @@ const getStatusText = (status) => {
   switch (status) {
     case 'completed':
       return 'Completed';
+    case 'active':
+      return 'Active';
+    case 'collaborative':
+      return 'Collaborative';
     case 'in-progress':
       return 'In Progress';
     case 'planning':
@@ -757,104 +782,183 @@ const getStatusText = (status) => {
             )}
 
             {/* Projects Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-  {(isEditing ? editData.projects : userData.projects).map((project) => (
-    <div key={project.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-300">
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
-            {project.isActive && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Active
+             {/* Projects Grid */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {(isEditing ? editData.projects : userData.projects).length > 0 ? (
+    (isEditing ? editData.projects : userData.projects).map((project) => (
+      <div key={project.id || project._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-300">
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {project.name || project.title || 'Untitled Project'}
+              </h3>
+              {/* Show Active badge for active projects */}
+              {(project.isActive || project.projectStatus === 'active') && project.projectStatus !== 'completed' && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Active
+                </span>
+              )}
+            </div>
+            {/* Project Status */}
+            {project.status || project.projectStatus && (
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status || project.projectStatus)}`}>
+                {getStatusText(project.status || project.projectStatus)}
               </span>
             )}
           </div>
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-            {getStatusText(project.status)}
-          </span>
+          {isEditing && (
+            <button
+              onClick={() => handleDeleteProject(project.id || project._id)}
+              className="text-red-600 hover:text-red-700 transition-colors duration-300"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
-        {isEditing && (
-          <button
-            onClick={() => handleDeleteProject(project.id)}
-            className="text-red-600 hover:text-red-700 transition-colors duration-300"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+        
+        <p className="text-gray-600 mb-4">{project.description || 'No description available'}</p>
+        
+        {/* Technologies - Fixed to handle different field names */}
+        {(project.tech || project.techStack) && (project.tech?.length > 0 || project.techStack?.length > 0) && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {(project.tech || project.techStack).map((tech, index) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
         )}
-      </div>
-      
-      <p className="text-gray-600 mb-4">{project.description}</p>
-      
-      <div className="flex flex-wrap gap-2 mb-4">
-        {project.tech.map((tech, index) => (
+
+        {/* Collaboration Section - only show if project needs collaboration */}
+        { project.projectStatus == 'collaborative' && (
+  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+    <div className="flex items-center mb-2">
+      <Users className="w-4 h-4 text-blue-600 mr-2" />
+      <span className="text-sm font-medium text-blue-800">Looking for collaborators</span>
+    </div>
+    {project.collaborationPurpose && project.collaborationPurpose.length > 0 && (
+      <div className="flex flex-wrap gap-1">
+        {project.collaborationPurpose.map((purpose, index) => (
           <span
             key={index}
-            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
+            className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
           >
-            {tech}
+            {purpose}
           </span>
         ))}
       </div>
+    )}
+  </div>
+)}
 
-      {/* Collaboration Section */}
-      {project.needsCollaboration && (
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-center mb-2">
-            <Users className="w-4 h-4 text-blue-600 mr-2" />
-            <span className="text-sm font-medium text-blue-800">Looking for collaborators</span>
+        {/* Collaborators - Fixed rendering */}
+        {project.collaborators && project.collaborators.length > 0 && (
+          <div className="mb-4">
+            <span className="text-sm font-medium text-gray-700 mb-2 block">Collaborators:</span>
+            <div className="flex flex-wrap gap-1">
+              {project.collaborators.map((collaborator, index) => {
+                console.log(collaborator);
+                let displayName = 'Unknown User';
+                let collaboratorId = index;
+                
+                if (typeof collaborator === 'string') {
+                  displayName = collaborator;
+                  collaboratorId = collaborator;
+                } else if (typeof collaborator === 'object' && collaborator !== null) {
+                  if (collaborator.userId) {
+                    console.log(collaborator.userId)
+                    if (typeof collaborator.userId === 'object') {
+                      displayName = collaborator.userId.name || 
+                                   collaborator.userId.fullname || 
+                                   collaborator.userId.email || 
+                                   'Unknown User';
+                      collaboratorId = collaborator.userId._id || collaborator.userId.id;
+                    } else {
+                      displayName = 'User';
+                      collaboratorId = collaborator.userId;
+                    }
+                  } else {
+                    displayName = collaborator.name || 
+                                 collaborator.fullname || 
+                                 collaborator.username || 
+                                 collaborator.email || 
+                                 'Unknown User';
+                    collaboratorId = collaborator.id || collaborator._id || index;
+                  }
+                }
+                
+                return (
+                  <span
+                    key={collaboratorId}
+                    className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium"
+                  >
+                    {displayName}
+                  </span>
+                );
+              })}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-1">
-            {project.collaborationNeeds.map((need, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
-              >
-                {need}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Collaborators */}
-      {project.collaborators && project.collaborators.length > 0 && (
-        <div className="mb-4">
-          <span className="text-sm font-medium text-gray-700 mb-2 block">Collaborators:</span>
-          <div className="flex flex-wrap gap-1">
-            {project.collaborators.map((collaborator, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium"
-              >
-                {collaborator}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex justify-between items-center">
-        {project.link && (
-          <a
-            href={project.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-300"
-          >
-            View Project
-            <ExternalLink className="w-3 h-3 ml-1" />
-          </a>
         )}
-        
-        {project.needsCollaboration && (
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors duration-300">
-            Join Project
-          </button>
-        )}
+
+        {/* Project Links and Actions */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            {/* View Project Link - Check multiple possible URL fields */}
+            {(project.link || project.githubUrl || project.liveUrl) && (
+              <a
+                href={project.link || project.githubUrl || project.liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-300"
+              >
+                View Project
+                <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
+            )}
+            
+            {/* Additional link if both GitHub and Live URL exist */}
+            {project.githubUrl && project.liveUrl && (
+              <a
+                href={project.liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-green-600 hover:text-green-700 text-sm font-medium transition-colors duration-300"
+              >
+                Live Demo
+                <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
+            )}
+          </div>
+          
+          {/* Join Project button - only show if project needs collaboration and is not completed */}
+          {project.needsCollaboration && (project.projectStatus !== 'completed' && project.status !== 'completed') && (
+            <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors duration-300">
+              Join Project
+            </button>
+          )}
+        </div>
       </div>
+    ))
+  ) : (
+    <div className="col-span-full text-center py-12">
+      <Code className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+      <h3 className="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
+      <p className="text-gray-500 mb-4">Start by adding your first project to showcase your work</p>
+      {isEditing && (
+        <button
+          onClick={() => setShowAddProject(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 inline-flex items-center"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Your First Project
+        </button>
+      )}
     </div>
-  ))}
+  )}
 </div>
           </div>
         )}

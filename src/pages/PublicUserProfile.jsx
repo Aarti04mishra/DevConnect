@@ -7,8 +7,8 @@ import {
   Heart, BookOpen, Zap, Award, Clock, Eye, ChevronRight, X
 } from 'lucide-react';
 import Navbar from '../Components/Navbar';
-import { followUser, unfollowUser, checkFollowStatus } from '../Services/AuthServices';
-
+// import { followUser, unfollowUser, checkFollowStatus } from '../Services/AuthServices';
+import { followUser, unfollowUser, checkFollowStatus, sendProjectCollaborationRequest } from '../Services/AuthServices';
 
 const PublicUserProfile = () => {
  const { userId } = useParams(); 
@@ -17,10 +17,8 @@ const PublicUserProfile = () => {
   const [error, setError] = useState(null); 
   const [activeTab, setActiveTab] = useState('overview');
   const [showCollaborationModal, setShowCollaborationModal] = useState(false);
-  // const [isFollowing, setIsFollowing] = useState(false);
   const [collaborationMessage, setCollaborationMessage] = useState('');
   const [selectedProject, setSelectedProject] = useState('');
-  // const [followLoading, setFollowLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
 const [isLoading, setIsLoading] = useState(false);
 const [followLoading, setFollowLoading] = useState(false);
@@ -69,7 +67,7 @@ const handleFollowToggle = async () => {
     }
   } catch (error) {
     console.error('Follow/Unfollow error:', error);
-    // Optional: Show error message
+   
   } finally {
     setFollowLoading(false);
   }
@@ -148,18 +146,37 @@ const handleFollowToggle = async () => {
   }
 };
 
-  const handleSendCollaboration = () => {
-    if (collaborationMessage.trim()) {
-      // In real app, this would send the collaboration request
-      console.log('Sending collaboration request:', {
-        message: collaborationMessage,
-        selectedProject: selectedProject
-      });
-      setShowCollaborationModal(false);
+const handleSendCollaboration = async () => {
+  if (collaborationMessage.trim() && selectedProject) {
+    const selectedProjectData = userData.projects.find(p => p._id === selectedProject);
+    
+    try {
+      // Show loading state
+      const originalMessage = collaborationMessage;
+      setCollaborationMessage('Sending...');
+      
+      // Send collaboration request using the API
+      const response = await sendProjectCollaborationRequest(selectedProject, userData._id, originalMessage);
+      
+      if (response.success) {
+        // Close modal and reset form
+        setShowCollaborationModal(false);
+        setCollaborationMessage('');
+        setSelectedProject('');
+        
+        // Show success message
+        alert(`Collaboration request sent to ${userData.fullname} successfully!`);
+      } else {
+        throw new Error(response.message || 'Failed to send request');
+      }
+    } catch (error) {
+      console.error('Error sending collaboration request:', error);
+      alert('Failed to send collaboration request. Please try again.');
+      // Reset the message if there was an error
       setCollaborationMessage('');
-      setSelectedProject('');
     }
-  };
+  }
+};
 
 const handleMessageClick = () => {
   // Ensure userData is available
@@ -257,59 +274,31 @@ const handleMessageClick = () => {
                     <Send className="w-4 h-4 mr-2" />
                     Collaborate
                   </button>
-                  {/* <button
-  onClick={handleFollow}
-  disabled={followLoading}
-  className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 flex items-center ${
-    followLoading 
-      ? 'bg-gray-300 cursor-not-allowed' 
-      : isFollowing 
-        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
-        : 'bg-green-600 hover:bg-green-700 text-white'
-  }`}
->
-                   {followLoading ? (
-    <>
-      <div className="w-4 h-4 mr-2 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-      {isFollowing ? 'Unfollowing...' : 'Following...'}
-    </>
-  ) : isFollowing ? (
-    <>
-      <User className="w-4 h-4 mr-2" />
-      Following
-    </>
-  ) : (
-    <>
-      <UserPlus className="w-4 h-4 mr-2" />
-      Follow
-    </>
-  )}
-                  </button> */}
 
                   <button
-  onClick={handleFollowToggle}
-  disabled={followLoading || isLoading}
-  className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-    isFollowing
-      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-      : 'bg-blue-600 text-white hover:bg-blue-700'
-  } ${(followLoading || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
->
-  {followLoading ? (
-    <div className="flex items-center">
-      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-      {isFollowing ? 'Unfollowing...' : 'Following...'}
-    </div>
-  ) : (
-    isFollowing ? 'Following' : 'Follow'
-  )}
+                    onClick={handleFollowToggle}
+                    disabled={followLoading || isLoading}
+                    className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                      isFollowing
+                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    } ${(followLoading || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {followLoading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                        {isFollowing ? 'Unfollowing...' : 'Following...'}
+                      </div>
+                    ) : (
+                      isFollowing ? 'Following' : 'Follow'
+                    )}
                   </button>
                   <button
-  onClick={handleMessageClick}
-  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-medium transition-all duration-300 flex items-center"
->
-  <MessageCircle className="w-4 h-4 mr-2" />
-  Message
+                    onClick={handleMessageClick}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-medium transition-all duration-300 flex items-center"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Message
                   </button>
                 </div>
               </div>
@@ -330,27 +319,7 @@ const handleMessageClick = () => {
               <div className="text-2xl font-bold text-gray-900">{userData.stats.reputation}</div>
               <div className="text-sm text-gray-600">Profile Views</div>
             </div>
-            {/* <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{userData.stats.githubStars}</div>
-              <div className="text-sm text-gray-600">GitHub Stars</div>
-            </div> */}
           </div>
-
-          {/* Achievements */}
-          {/* <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Achievements</h3>
-            <div className="flex flex-wrap gap-3">
-              {userData.achievements.map((achievement, index) => {
-                const Icon = achievement.icon;
-                return (
-                  <div key={index} className={`flex items-center px-3 py-2 rounded-full text-sm font-medium bg-${achievement.color}-100 text-${achievement.color}-800`}>
-                    <Icon className="w-4 h-4 mr-2" />
-                    {achievement.name}
-                  </div>
-                );
-              })}
-            </div>
-          </div> */}
         </div>
       </div>
 
@@ -430,81 +399,129 @@ const handleMessageClick = () => {
 
               {/* Featured Projects */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">Featured Projects</h2>
-                  <button
-                    onClick={() => setActiveTab('projects')}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
-                  >
-                    View All
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </button>
-                </div>
-                
-                <div className="space-y-4">
-                  {/* {userData.projects.slice(0, 2).map((project) => (
-                    <div key={project.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-                            {project.status}
-                          </span>
-                          {project.lookingForCollaborators && (
-                            <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
-                              Looking for collaborators
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-gray-600 mb-3">{project.description}</p>
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {project.tech.map((tech, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
-                          >
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                      {project.lookingForCollaborators && (
-                        <div className="mb-3">
-                          <p className="text-sm text-gray-600 mb-1">Looking for:</p>
-                          <div className="flex flex-wrap gap-1">
-                            {project.collaboratorsNeeded.map((role, index) => (
-                              <span key={index} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
-                                {role}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center">
-                        {project.link && (
-                          <a
-                            href={project.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-300"
-                          >
-                            View Project
-                            <ExternalLink className="w-3 h-3 ml-1" />
-                          </a>
-                        )}
-                        {project.lookingForCollaborators && (
-                          <button
-                            onClick={() => setShowCollaborationModal(true)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition-all duration-300"
-                          >
-                            Collaborate
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))} */}
-                </div>
+  <div className="flex justify-between items-center mb-4">
+    <h2 className="text-xl font-semibold text-gray-900">Featured Projects</h2>
+    <button
+      onClick={() => setActiveTab('projects')}
+      className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
+    >
+      View All
+      <ChevronRight className="w-4 h-4 ml-1" />
+    </button>
+  </div>
+  
+  <div className="space-y-4">
+    {userData.projects && userData.projects.length > 0 ? (
+      userData.projects.slice(0, 2).map((project) => (
+        <div key={project._id} className="border border-gray-200 rounded-lg p-4">
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+            <div className="flex items-center space-x-2">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.projectStatus)}`}>
+                {project.projectStatus}
+              </span>
+              {project.projectStatus === 'collaborative' && (
+                <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
+                  Looking for collaborators
+                </span>
+              )}
+            </div>
+          </div>
+          <p className="text-gray-600 mb-3">{project.description}</p>
+          
+          {/* Tech Stack */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {project.techStack && project.techStack.map((tech, index) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+          
+          {/* Collaboration Purpose - Enhanced Display */}
+          {project.projectStatus === 'collaborative' && project.collaborationPurpose && project.collaborationPurpose.length > 0 && (
+            <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center mb-2">
+                <Users className="w-4 h-4 text-green-600 mr-2" />
+                <p className="text-sm font-medium text-green-800">Seeking collaboration for:</p>
               </div>
+              <div className="flex flex-wrap gap-2">
+                {project.collaborationPurpose.map((purpose, index) => (
+                  <span key={index} className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium border border-green-300">
+                    {purpose}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Existing collaborators if any */}
+          {project.collaborators && project.collaborators.length > 0 && (
+            <div className="mb-3">
+              <p className="text-sm text-gray-600 mb-2 flex items-center">
+                <Users className="w-4 h-4 mr-1" />
+                Current collaborators ({project.collaborators.length}):
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {project.collaborators.map((collaborator, index) => (
+                  <span key={index} className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                    {collaborator.userId?.fullname || 'Unknown'}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-between items-center">
+            <div className="flex space-x-3">
+              {project.githubUrl && (
+                <a
+                  href={project.githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-300"
+                >
+                  View Code
+                  <ExternalLink className="w-3 h-3 ml-1" />
+                </a>
+              )}
+              {project.liveUrl && (
+                <a
+                  href={project.liveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-green-600 hover:text-green-700 text-sm font-medium transition-colors duration-300"
+                >
+                  Live Demo
+                  <ExternalLink className="w-3 h-3 ml-1" />
+                </a>
+              )}
+            </div>
+            {project.projectStatus === 'collaborative' && (
+              <button
+                onClick={() => {
+                  setSelectedProject(project._id);
+                  setShowCollaborationModal(true);
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition-all duration-300 flex items-center"
+              >
+                <Send className="w-3 h-3 mr-1" />
+                Collaborate
+              </button>
+            )}
+          </div>
+        </div>
+      ))
+    ) : (
+      <div className="text-center py-8">
+        <p className="text-gray-500">No projects available</p>
+      </div>
+    )}
+  </div>
+</div>
             </div>
 
             {/* Sidebar */}
@@ -544,20 +561,7 @@ const handleMessageClick = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
                 <div className="space-y-3">
-                  {/* {userData.recentActivity.map((activity, index) => {
-                    const Icon = activity.icon;
-                    return (
-                      <div key={index} className="flex items-start space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Icon className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900">{activity.action}</p>
-                          <p className="text-xs text-gray-500">{activity.time}</p>
-                        </div>
-                      </div>
-                    );
-                  })} */}
+                  {/* Activity items would go here */}
                 </div>
               </div>
             </div>
@@ -579,67 +583,106 @@ const handleMessageClick = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* {userData.projects.map((project) => (
-                <div key={project.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
-                    <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-                        {project.status}
-                      </span>
-                      {project.lookingForCollaborators && (
-                        <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
-                          Seeking collaborators
+              {userData.projects && userData.projects.length > 0 ? (
+                userData.projects.map((project) => (
+                  <div key={project._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.projectStatus)}`}>
+                          {project.projectStatus}
                         </span>
+                        {project.projectStatus === 'collaborative' && (
+                          <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
+                            Seeking collaborators
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-gray-600 mb-4">{project.description}</p>
+                    
+                    {/* Collaborators section */}
+                    {project.collaborators && project.collaborators.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-600 mb-2">Collaborators:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {project.collaborators.map((collaborator, index) => (
+                            <span key={index} className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                              {collaborator.userId?.fullname || 'Unknown'}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {project.techStack && project.techStack.map((tech, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                    
+                    {project.projectStatus === 'collaborative' && project.collaborationPurpose && (
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-600 mb-2">Looking for:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {project.collaborationPurpose.map((purpose, index) => (
+                            <span key={index} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                              {purpose}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between items-center">
+                      <div className="flex space-x-3">
+                        {project.githubUrl && (
+                          <a
+                            href={project.githubUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-300"
+                          >
+                            View Code
+                            <ExternalLink className="w-3 h-3 ml-1" />
+                          </a>
+                        )}
+                        {project.liveUrl && (
+                          <a
+                            href={project.liveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-green-600 hover:text-green-700 text-sm font-medium transition-colors duration-300"
+                          >
+                            Live Demo
+                            <ExternalLink className="w-3 h-3 ml-1" />
+                          </a>
+                        )}
+                      </div>
+                      {project.projectStatus === 'collaborative' && (
+                        <button
+                          onClick={() => {
+                            setSelectedProject(project._id);
+                            setShowCollaborationModal(true);
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+                        >
+                          Collaborate
+                        </button>
                       )}
                     </div>
                   </div>
-                  <p className="text-gray-600 mb-4">{project.description}</p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {project.tech.map((tech, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                  {project.lookingForCollaborators && (
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-600 mb-2">Looking for:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {project.collaboratorsNeeded.map((role, index) => (
-                          <span key={index} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
-                            {role}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center">
-                    {project.link && (
-                      <a
-                        href={project.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-300"
-                      >
-                        View Project
-                        <ExternalLink className="w-3 h-3 ml-1" />
-                      </a>
-                    )}
-                    {project.lookingForCollaborators && (
-                      <button
-                        onClick={() => setShowCollaborationModal(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
-                      >
-                        Collaborate
-                      </button>
-                    )}
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No projects available</p>
                 </div>
-              ))} */}
+              )}
             </div>
           </div>
         )}
@@ -648,20 +691,6 @@ const handleMessageClick = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">Activity Timeline</h2>
             <div className="space-y-6">
-              {/* {userData.recentActivity.map((activity, index) => {
-                const Icon = activity.icon;
-                return (
-                  <div key={index} className="flex items-start space-x-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-gray-900 font-medium">{activity.action}</p>
-                      <p className="text-gray-500 text-sm">{activity.time}</p>
-                    </div>
-                  </div>
-                );
-              })} */}
               <div className="text-center py-8">
                 <p className="text-gray-500">End of activity timeline</p>
               </div>
@@ -672,69 +701,109 @@ const handleMessageClick = () => {
 
       {/* Collaboration Modal */}
       {showCollaborationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Send Collaboration Request</h3>
-              <button
-                onClick={() => setShowCollaborationModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select your project (optional)
-                </label>
-                <select
-                  value={selectedProject}
-                  onChange={(e) => setSelectedProject(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a project...</option>
-                  {/* {myProjects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
-                  ))} */}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Message
-                </label>
-                <textarea
-                  value={collaborationMessage}
-                  onChange={(e) => setCollaborationMessage(e.target.value)}
-                  rows="4"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Hi! I'd love to collaborate with you on your project. I have experience in..."
-                />
-              </div>
-            </div>
-            
-            <div className="flex space-x-3 mt-6">
-              <button
-                onClick={handleSendCollaboration}
-                disabled={!collaborationMessage.trim()}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300"
-              >
-                Send Request
-              </button>
-              <button
-                onClick={() => setShowCollaborationModal(false)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium transition-all duration-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Send Collaboration Request</h3>
+        <button
+          onClick={() => setShowCollaborationModal(false)}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select project to collaborate on
+          </label>
+          <select
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select a project...</option>
+            {userData.projects && userData.projects
+              .filter(project => project.projectStatus === 'collaborative')
+              .map((project) => (
+                <option key={project._id} value={project._id}>
+                  {project.title}
+                </option>
+              ))
+            }
+          </select>
+          {userData.projects && userData.projects.filter(project => project.projectStatus === 'collaborative').length === 0 && (
+            <p className="text-sm text-gray-500 mt-1">No projects available for collaboration</p>
+          )}
         </div>
-      )}
+        
+        {/* Show selected project details */}
+        {selectedProject && (
+          <div className="bg-gray-50 p-3 rounded-lg">
+            {(() => {
+              const project = userData.projects.find(p => p._id === selectedProject);
+              return project ? (
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-1">{project.title}</h4>
+                  <p className="text-sm text-gray-600 mb-2">{project.description}</p>
+                  {project.collaborationPurpose && project.collaborationPurpose.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Looking for:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {project.collaborationPurpose.map((purpose, index) => (
+                          <span key={index} className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs">
+                            {purpose}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null;
+            })()}
+          </div>
+        )}
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Message
+          </label>
+          <textarea
+            value={collaborationMessage}
+            onChange={(e) => setCollaborationMessage(e.target.value)}
+            rows="4"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            placeholder={selectedProject ? 
+              `Hi ${userData.fullname}! I'd love to collaborate with you on this project. I have experience in...` :
+              `Hi ${userData.fullname}! I'd love to collaborate with you. Please select a project above.`
+            }
+          />
+        </div>
+      </div>
+      
+      <div className="flex space-x-3 mt-6">
+        <button
+          onClick={handleSendCollaboration}
+          disabled={!collaborationMessage.trim() || !selectedProject}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium transition-all duration-300"
+        >
+          Send Request
+        </button>
+        <button
+          onClick={() => {
+            setShowCollaborationModal(false);
+            setCollaborationMessage('');
+            setSelectedProject('');
+          }}
+          className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium transition-all duration-300"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

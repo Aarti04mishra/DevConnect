@@ -69,8 +69,8 @@ const handleSubmit = async (e) => {
     localStorage.setItem('user', JSON.stringify(response.data.user));
   
     
-    // Redirect to profile page after successful login
-    navigate('/profile');
+    
+    navigate('/home');
     
   } catch (error) {
     setErrors({ 
