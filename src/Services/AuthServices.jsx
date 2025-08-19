@@ -358,7 +358,7 @@ export const deleteProject = async (projectId) => {
   }
 };
 
-// ============== FEED API FUNCTIONS ==============
+
 
 // Get feed posts (projects from followed users + own projects)
 export const getFeedPosts = async (page = 1, limit = 10) => {
@@ -477,23 +477,17 @@ export const sharePost = async (postId) => {
 // Get user's projects
 export const getProjects = async () => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/projects`, {
-      method: 'GET',
+    const token = localStorage.getItem("token");
+
+    const response = await api.get("/projects", {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch projects');
-    }
-
-    const data = await response.json();
-    return data;
+    return response.data;
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    console.error("Error fetching projects:", error);
     throw error;
   }
 };
