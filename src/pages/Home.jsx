@@ -32,61 +32,6 @@ const closeShareModal = () => {
   setIsShareModalOpen(false);
 }
 
- const projects = [
-    {
-      id: 1,
-      title: 'AI-Powered Task Manager',
-      description: 'Built a smart task management app with ML-based priority suggestions and natural language processing for task creation.',
-      author: 'Alex Chen',
-      avatar: '👨‍💻',
-      role: 'Full-Stack Developer',
-      rating: 4.9,
-      timeAgo: '2 hours ago',
-      tags: ['React', 'Python', 'TensorFlow', 'Node.js'],
-      verified: true,
-      icon: <Code className="h-12 w-12 text-purple-500" />
-    },
-    {
-      id: 2,
-      title: 'Real-time Collaboration IDE',
-      description: 'A web-based IDE with real-time collaboration features, syntax highlighting, and integrated version control.',
-      author: 'Sarah Johnson',
-      avatar: '👩‍💻',
-      role: 'Frontend Developer',
-      rating: 4.8,
-      timeAgo: '5 hours ago',
-      tags: ['TypeScript', 'WebSocket', 'Monaco', 'Docker'],
-      verified: true,
-      icon: <Globe className="h-12 w-12 text-blue-500" />
-    },
-    {
-      id: 3,
-      title: 'Blockchain Voting System',
-      description: 'Secure, transparent voting platform built on Ethereum with smart contracts and decentralized architecture.',
-      author: 'Mike Davis',
-      avatar: '🧑‍💻',
-      role: 'Blockchain Developer',
-      rating: 4.7,
-      timeAgo: '1 day ago',
-      tags: ['Solidity', 'Web3', 'React', 'IPFS'],
-      verified: false,
-      icon: <Database className="h-12 w-12 text-green-500" />
-    },
-    {
-      id: 4,
-      title: 'Mobile Banking App',
-      description: 'Secure mobile banking application with biometric authentication, real-time transactions, and budget tracking.',
-      author: 'Lisa Wang',
-      avatar: '👩‍💻',
-      role: 'Mobile Developer',
-      rating: 4.9,
-      timeAgo: '2 days ago',
-      tags: ['React Native', 'Firebase', 'Stripe', 'Redux'],
-      verified: true,
-      icon: <Smartphone className="h-12 w-12 text-pink-500" />
-    }
-  ];
-
   const trendingSkills = [
     { name: 'React', count: '139k', trend: '+5.2%', color: 'bg-blue-500' },
     { name: 'Python', count: '82k', trend: '+3.8%', color: 'bg-green-500' },

@@ -116,13 +116,13 @@ const SignupPage = () => {
   if (validateStep(currentStep)) {
     try {
       setIsLoading(true);
-      setApiError(''); // Clear previous errors
+      setApiError(''); 
       
       const signupData = {
-        fullname: formData.fullName,  // ← Fixed: changed from fullName to fullname
+        fullname: formData.fullName,  
         email: formData.email,
         password: formData.password,
-        confirmPassword: formData.confirmPassword,  // ← Keep this for backend validation
+        confirmPassword: formData.confirmPassword,  
         university: formData.university,
         skillLevel: formData.skillLevel,
         interests: formData.interests,
@@ -133,7 +133,6 @@ const SignupPage = () => {
 
       const result = await signupUser(signupData);
       
-      console.log('Signup successful:', result);
      navigate('/home')
       
     } catch (error) {

@@ -37,15 +37,13 @@ const validateForm = () => {
   return Object.keys(newErrors).length === 0;
 };
 
-
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
+   
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -68,8 +66,6 @@ const handleSubmit = async (e) => {
     localStorage.setItem('token', response.data.token);
     localStorage.setItem('user', JSON.stringify(response.data.user));
   
-    
-    
     navigate('/home');
     
   } catch (error) {
@@ -95,12 +91,7 @@ const handleSubmit = async (e) => {
                 DevConnect.
               </h1>
             </div>
-            {/* <div className="text-gray-600 text-sm">
-              New to DevConnect? 
-              <button className="text-blue-600 hover:text-blue-700 ml-1 font-semibold transition-colors duration-300">
-                Sign Up
-              </button>
-            </div> */}
+          
           </div>
         </div>
       </div>

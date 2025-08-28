@@ -1,7 +1,6 @@
 import axios from 'axios';
 
 
-
 const api = axios.create({
   baseURL: import.meta.env.VITE_BASE_URL,
   headers: {
@@ -77,7 +76,7 @@ export const loginUser = async (credentials) => {
 export const logoutUser = async () => {
   try {
     const response = await api.post('/logout');
-    // Clear the token from localStorage after successful logout
+  
     localStorage.removeItem('token');
     return response.data;
   } catch (error) {
@@ -94,7 +93,6 @@ export const logoutUser = async () => {
   }
 };
 
-// Add this new function for searching users
 export const searchUsers = async (query) => {
   try {
     const response = await api.get(`/search?q=${encodeURIComponent(query)}`);
